@@ -1,0 +1,12 @@
+#!/bin/bash
+# could be improved by smarpening the value channel alone, and leaving color alone
+# sharpening color really only increases noise
+# and most of what we percieve as sharpness is in the value channel anyways
+basename=${1%.*}
+extension=${1##*.}
+tmpdir=`mktemp --directory`
+#tmpdir='./'
+convert $1 -blur 0x3 -define convolve:scale='-1!' -morphology Convolve Laplacian:0 -colorspace Gray -contrast-stretch 4% -blur 0x5 -contrast-stretch 4% -write $tmpdir/mask.ppm -negate $tmpdir/inverse_mask.ppm
+convert $1 -blur 0x2            -write $tmpdir/blurred.ppm -compose Multiply $tmpdir/inverse_mask.ppm -composite $tmpdir/product.ppm
+convert $1 -unsharp 9x2.5+1+0.0 -write $tmpdir/sharp.ppm   -compose Multiply $tmpdir/mask.ppm         -composite $tmpdir/product_sharp.ppm
+convert $tmpdir/sharp.ppm $tmpdir/blurred.ppm $tmpdir/inverse_mask.ppm -composite ${basename}_sharp.$extension
